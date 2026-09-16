@@ -1,4 +1,4 @@
-const CACHE = 'sisters-saving-pwa-v1';
+const CACHE = 'sisters-saving-pwa-v2';
 const CORE = [
   './',
   './index.html',
@@ -20,7 +20,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)));
+    await Promise.all(keys.filter(k => k.startsWith('sisters-saving-pwa-') && k !== CACHE).map(k => caches.delete(k)));
     await self.clients.claim();
   })());
 });
