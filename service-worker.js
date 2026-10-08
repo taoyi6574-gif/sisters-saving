@@ -1,4 +1,4 @@
-const CACHE = 'sisters-saving-pwa-v4';
+const CACHE = 'sisters-saving-pwa-v5';
 const CORE = [
   './',
   './index.html',
