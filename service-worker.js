@@ -1,4 +1,4 @@
-const CACHE = 'sisters-saving-pwa-v6';
+const CACHE = 'sisters-saving-pwa-v7';
 const CORE = [
   './',
   './index.html',
@@ -12,7 +12,6 @@ self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     await cache.addAll(CORE);
-    try { await cache.add(new Request(XLSX_CDN, {mode:'no-cors'})); } catch (_) {}
     self.skipWaiting();
   })());
 });
@@ -27,6 +26,28 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  // Prefer the current page online; retain the last successful page for offline use.
+  if (event.request.mode === 'navigate') {
+    event.respondWith((async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      try {
+        const fresh = await fetch(event.request, {cache:'no-store', signal:controller.signal});
+        if (!fresh.ok) throw new Error('Page request failed');
+        const cache = await caches.open(CACHE);
+        await cache.put('./index.html', fresh.clone());
+        return fresh;
+      } catch (error) {
+        const cache = await caches.open(CACHE);
+        const cached = await cache.match('./index.html');
+        if (cached) return cached;
+        throw error;
+      } finally {
+        clearTimeout(timer);
+      }
+    })());
+    return;
+  }
   event.respondWith((async () => {
     const cached = await caches.match(event.request);
     if (cached) return cached;
