@@ -1,7 +1,9 @@
-const CACHE = 'sisters-saving-pwa-v7';
+const CACHE = 'sisters-saving-pwa-v8';
 const CORE = [
   './',
   './index.html',
+  './ledger-tools.js',
+  './text-import.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png'
@@ -27,19 +29,20 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   // Prefer the current page online; retain the last successful page for offline use.
-  if (event.request.mode === 'navigate') {
+  if (event.request.mode === 'navigate' || (event.request.destination === 'script' && new URL(event.request.url).origin === self.location.origin)) {
     event.respondWith((async () => {
+      const cacheKey = event.request.mode === 'navigate' ? './index.html' : event.request;
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 5000);
       try {
         const fresh = await fetch(event.request, {cache:'no-store', signal:controller.signal});
         if (!fresh.ok) throw new Error('Page request failed');
         const cache = await caches.open(CACHE);
-        await cache.put('./index.html', fresh.clone());
+        await cache.put(cacheKey, fresh.clone());
         return fresh;
       } catch (error) {
         const cache = await caches.open(CACHE);
-        const cached = await cache.match('./index.html');
+        const cached = await cache.match(cacheKey);
         if (cached) return cached;
         throw error;
       } finally {
